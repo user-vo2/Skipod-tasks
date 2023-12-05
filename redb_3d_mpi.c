@@ -61,7 +61,6 @@ int main(int an, char **as) {
             break;
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Gather(A[fst_r], cnt_r * N2, MPI_DOUBLE, A[1], cnt_r * N2, 
         MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
