@@ -3,6 +3,12 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
+
+#define MARKER 1
+#define REQUEST 0
+
+#define QUEUE_SIZE 100
 
 int main(int argc, char **argv) {
     int rank, size;
@@ -11,17 +17,50 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     int parent = (rank - 1) / 2;
-    int left = 2 * rank + 1;
-    int right = 2 * rank + 2;
+    int children_finished = 0;
 
-    int tmp = 0;
-    if (rank != 0) {
-        printf("%d requested marker from %d.\n", rank, parent);
-        MPI_Recv(&tmp, 1, MPI_INT, parent, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    int marker_direction = parent;
+
+    int queue[QUEUE_SIZE];
+
+    int queue_start = 0, queue_end = 0;
+
+    char msg_type = REQUEST;
+    bool has_marker = !rank;
+    
+    MPI_Status status;
+
+    queue[queue_end++] = rank;
+
+    if (!has_marker) {
+        MPI_Send(&msg_type, 1, MPI_CHAR, marker_direction, 0, MPI_COMM_WORLD);
+    }
+    while (1) {
+        MPI_Recv(&msg_type, 1, MPI_CHAR, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+        if (msg_type == MARKER) {
+            has_marker = true;
+            marker_direction = queue[queue_start++];
+            if (marker_direction == rank) {
+                break;
+            } else {
+                MPI_Send(&msg_type, 1, MPI_CHAR, marker_direction, 0, MPI_COMM_WORLD);
+                has_marker = false;
+            }
+        } else if (msg_type == REQUEST) {
+            queue[queue_end++] = status.MPI_SOURCE;
+            if (has_marker) {
+                marker_direction = queue[queue_start++];
+                msg_type = MARKER;
+                MPI_Send(&msg_type, 1, MPI_CHAR, marker_direction, 0, MPI_COMM_WORLD);
+                has_marker = false;
+            } else {
+                MPI_Send(&msg_type, 1, MPI_CHAR, marker_direction, 0, MPI_COMM_WORLD);
+            }
+        }
     }
     
-    printf("%d aqcuared the marker.\n", rank);
-
+    printf("%d aqcuared the marker from %d, entering critical section.\n", rank, status.MPI_SOURCE);
+    fflush(stdout);
     const char* file_path = "critical.txt";
     FILE * file = fopen(file_path, "r");
     if (file) {
@@ -31,34 +70,30 @@ int main(int argc, char **argv) {
     } else {
         srand(time(NULL));
         unsigned int sleeptime = 1 + rand() % 10;
-        printf("Process %d started working. It'll finish in %u second(s).\n", rank, sleeptime);
         sleep(sleeptime);
-        printf("Process %d finished working.\n", rank);
+        printf("%d exiting critical section\n", rank);
+        fflush(stdout);
         remove(file_path);
     }
 
-    if (left < size) {
-        int tmp_l = 1;
-        printf("%d sending marker to %d.\n", rank, left);
-        MPI_Send(&tmp_l, 1, MPI_INT, left, 0, MPI_COMM_WORLD);
-        printf("%d requested marker from %d.\n", rank, left);
-        MPI_Recv(&tmp_l, 1, MPI_INT, left, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("%d aqcuared the marker.\n", rank);
-    }
-
-    if (right < size) {
-        printf("%d sending marker to %d.\n", rank, right);
-        MPI_Send(&tmp, 1, MPI_INT, right, 0, MPI_COMM_WORLD);
-        if (tmp) {
-            printf("%d requested marker from %d.\n", rank, right);
-            MPI_Recv(&tmp, 1, MPI_INT, right, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            printf("%d aqcuared the marker.\n", rank);
+    while (1) {
+        MPI_Recv(&msg_type, 1, MPI_CHAR, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+        if (msg_type == MARKER) {
+            has_marker = true;
+            marker_direction = queue[queue_start++];
+            MPI_Send(&msg_type, 1, MPI_CHAR, marker_direction, 0, MPI_COMM_WORLD);
+            has_marker = false;
+        } else if (msg_type == REQUEST) {
+            queue[queue_end++] = status.MPI_SOURCE;
+            if (has_marker) {
+                marker_direction = queue[queue_start++];
+                msg_type = MARKER;
+                MPI_Send(&msg_type, 1, MPI_CHAR, marker_direction, 0, MPI_COMM_WORLD);
+                has_marker = false;
+            } else {
+                MPI_Send(&msg_type, 1, MPI_CHAR, marker_direction, 0, MPI_COMM_WORLD);
+            }
         }
-    }
-
-    if (rank != 0 && tmp) {
-        printf("%d sending marker to %d.\n", rank, parent);
-        MPI_Send(&tmp, 1, MPI_INT, parent, 0, MPI_COMM_WORLD);
     }
 
     MPI_Finalize();
