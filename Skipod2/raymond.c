@@ -32,9 +32,7 @@ int main(int argc, char **argv) {
 
     queue[queue_end++] = rank;
 
-    if (!has_marker) {
-        MPI_Send(&msg_type, 1, MPI_CHAR, marker_direction, 0, MPI_COMM_WORLD);
-    }
+    MPI_Send(&msg_type, 1, MPI_CHAR, marker_direction, 0, MPI_COMM_WORLD);
     while (1) {
         MPI_Recv(&msg_type, 1, MPI_CHAR, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
         if (msg_type == MARKER) {

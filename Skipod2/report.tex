@@ -74,196 +74,60 @@ sleep (<случайное время>);
 \end{figure}
 Маркер передается в последовательности: 0 -> 1 -> 3 -> 7 -> 15 -> 7 -> 16 -> 7 -> 3 -> 8 ...\par
 Итого сообщений передачи маркера с запросом – 21, маркера без запроса – 24, всего передач маркера – 45.\par
-(Lz - запрос, Lm - маркер; считаем эти сообщения равными 4 байтам)\par
-Таким образом, (Ts+Tb*Lz)*21+(Ts+Tb*Lm)*45 = 6864.
+(Lz - запрос, Lm - маркер; считаем эти сообщения равными 1 байту)\par
+Таким образом, (Ts+Tb*Lz)*21+(Ts+Tb*Lm)*45 = 6666.
 \subsection{Результаты}
 \begin{verbatim}
-21 requested marker from 10.
-12 requested marker from 5.
-7 requested marker from 3.
-24 requested marker from 11.
-2 requested marker from 0.
-8 requested marker from 3.
-15 requested marker from 7.
-13 requested marker from 6.
-17 requested marker from 8.
-14 requested marker from 6.
-20 requested marker from 9.
-11 requested marker from 5.
-0 aqcuared the marker.
-Process 0 started working. It'll finish in 7 second(s).
-4 requested marker from 1.
-10 requested marker from 4.
-1 requested marker from 0.
-5 requested marker from 2.
-9 requested marker from 4.
-3 requested marker from 1.
-22 requested marker from 10.
-16 requested marker from 7.
-6 requested marker from 2.
-19 requested marker from 9.
-18 requested marker from 8.
-23 requested marker from 11.
-Process 0 finished working.
-0 sending marker to 1.
-0 requested marker from 1.
-1 aqcuared the marker.
-Process 1 started working. It'll finish in 2 second(s).
-Process 1 finished working.
-1 sending marker to 3.
-1 requested marker from 3.
-3 aqcuared the marker.
-Process 3 started working. It'll finish in 9 second(s).
-Process 3 finished working.
-3 sending marker to 7.
-3 requested marker from 7.
-7 aqcuared the marker.
-Process 7 started working. It'll finish in 6 second(s).
-Process 7 finished working.
-7 sending marker to 15.
-7 requested marker from 15.
-15 aqcuared the marker.
-Process 15 started working. It'll finish in 6 second(s).
-Process 15 finished working.
-15 sending marker to 7.
-7 aqcuared the marker.
-7 sending marker to 16.
-7 requested marker from 16.
-16 aqcuared the marker.
-Process 16 started working. It'll finish in 7 second(s).
-Process 16 finished working.
-16 sending marker to 7.
-7 aqcuared the marker.
-7 sending marker to 3.
-3 aqcuared the marker.
-3 sending marker to 8.
-3 requested marker from 8.
-8 aqcuared the marker.
-Process 8 started working. It'll finish in 4 second(s).
-Process 8 finished working.
-8 sending marker to 17.
-8 requested marker from 17.
-17 aqcuared the marker.
-Process 17 started working. It'll finish in 2 second(s).
-Process 17 finished working.
-17 sending marker to 8.
-8 aqcuared the marker.
-8 sending marker to 18.
-8 requested marker from 18.
-18 aqcuared the marker.
-Process 18 started working. It'll finish in 9 second(s).
-Process 18 finished working.
-18 sending marker to 8.
-8 aqcuared the marker.
-8 sending marker to 3.
-3 aqcuared the marker.
-3 sending marker to 1.
-1 aqcuared the marker.
-1 sending marker to 4.
-1 requested marker from 4.
-4 aqcuared the marker.
-Process 4 started working. It'll finish in 10 second(s).
-Process 4 finished working.
-4 sending marker to 9.
-4 requested marker from 9.
-9 aqcuared the marker.
-Process 9 started working. It'll finish in 2 second(s).
-Process 9 finished working.
-9 sending marker to 19.
-9 requested marker from 19.
-19 aqcuared the marker.
-Process 19 started working. It'll finish in 3 second(s).
-Process 19 finished working.
-19 sending marker to 9.
-9 aqcuared the marker.
-9 sending marker to 20.
-9 requested marker from 20.
-20 aqcuared the marker.
-Process 20 started working. It'll finish in 2 second(s).
-Process 20 finished working.
-20 sending marker to 9.
-9 aqcuared the marker.
-9 sending marker to 4.
-4 aqcuared the marker.
-4 sending marker to 10.
-4 requested marker from 10.
-10 aqcuared the marker.
-Process 10 started working. It'll finish in 8 second(s).
-Process 10 finished working.
-10 sending marker to 21.
-10 requested marker from 21.
-21 aqcuared the marker.
-Process 21 started working. It'll finish in 1 second(s).
-Process 21 finished working.
-21 sending marker to 10.
-10 aqcuared the marker.
-10 sending marker to 22.
-10 requested marker from 22.
-22 aqcuared the marker.
-Process 22 started working. It'll finish in 4 second(s).
-Process 22 finished working.
-22 sending marker to 10.
-10 aqcuared the marker.
-10 sending marker to 4.
-4 aqcuared the marker.
-4 sending marker to 1.
-1 aqcuared the marker.
-1 sending marker to 0.
-0 aqcuared the marker.
-0 sending marker to 2.
-2 aqcuared the marker.
-Process 2 started working. It'll finish in 2 second(s).
-Process 2 finished working.
-2 sending marker to 5.
-2 requested marker from 5.
-5 aqcuared the marker.
-Process 5 started working. It'll finish in 4 second(s).
-Process 5 finished working.
-5 sending marker to 11.
-5 requested marker from 11.
-11 aqcuared the marker.
-Process 11 started working. It'll finish in 10 second(s).
-Process 11 finished working.
-11 sending marker to 23.
-11 requested marker from 23.
-23 aqcuared the marker.
-Process 23 started working. It'll finish in 2 second(s).
-Process 23 finished working.
-23 sending marker to 11.
-11 aqcuared the marker.
-11 sending marker to 24.
-11 requested marker from 24.
-24 aqcuared the marker.
-Process 24 started working. It'll finish in 10 second(s).
-Process 24 finished working.
-24 sending marker to 11.
-11 aqcuared the marker.
-11 sending marker to 5.
-5 aqcuared the marker.
-5 sending marker to 12.
-5 requested marker from 12.
-12 aqcuared the marker.
-Process 12 started working. It'll finish in 10 second(s).
-Process 12 finished working.
-12 sending marker to 5.
-5 aqcuared the marker.
-5 sending marker to 2.
-2 aqcuared the marker.
-2 sending marker to 6.
-6 aqcuared the marker.
-Process 6 started working. It'll finish in 5 second(s).
-Process 6 finished working.
-6 sending marker to 13.
-13 aqcuared the marker.
-Process 13 started working. It'll finish in 9 second(s).
-6 requested marker from 13.
-Process 13 finished working.
-13 sending marker to 6.
-6 aqcuared the marker.
-6 sending marker to 14.
-14 aqcuared the marker.
-Process 14 started working. It'll finish in 1 second(s).
-Process 14 finished working.
+0 aqcuared the marker from 0, entering critical section.
+0 exiting critical section
+2 aqcuared the marker from 0, entering critical section.
+2 exiting critical section
+5 aqcuared the marker from 2, entering critical section.
+5 exiting critical section
+12 aqcuared the marker from 5, entering critical section.
+12 exiting critical section
+11 aqcuared the marker from 5, entering critical section.
+11 exiting critical section
+24 aqcuared the marker from 11, entering critical section.
+24 exiting critical section
+23 aqcuared the marker from 11, entering critical section.
+23 exiting critical section
+6 aqcuared the marker from 2, entering critical section.
+6 exiting critical section
+14 aqcuared the marker from 6, entering critical section.
+14 exiting critical section
+13 aqcuared the marker from 6, entering critical section.
+13 exiting critical section
+1 aqcuared the marker from 0, entering critical section.
+1 exiting critical section
+3 aqcuared the marker from 1, entering critical section.
+3 exiting critical section
+7 aqcuared the marker from 3, entering critical section.
+7 exiting critical section
+15 aqcuared the marker from 7, entering critical section.
+15 exiting critical section
+16 aqcuared the marker from 7, entering critical section.
+16 exiting critical section
+8 aqcuared the marker from 3, entering critical section.
+8 exiting critical section
+17 aqcuared the marker from 8, entering critical section.
+17 exiting critical section
+18 aqcuared the marker from 8, entering critical section.
+18 exiting critical section
+4 aqcuared the marker from 1, entering critical section.
+4 exiting critical section
+10 aqcuared the marker from 4, entering critical section.
+10 exiting critical section
+21 aqcuared the marker from 10, entering critical section.
+21 exiting critical section
+22 aqcuared the marker from 10, entering critical section.
+22 exiting critical section
+9 aqcuared the marker from 4, entering critical section.
+9 exiting critical section
+19 aqcuared the marker from 9, entering critical section.
+19 exiting critical section
+20 aqcuared the marker from 9, entering critical section.
+20 exiting critical section
 \end{verbatim}
 \newpage
 \section{Задача 2}
