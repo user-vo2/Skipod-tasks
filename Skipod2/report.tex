@@ -72,63 +72,99 @@ sleep (<случайное время>);
   \caption{Схема системы передачи маркера}
   \label{fig:marker}
 \end{figure}
-Маркер передается в последовательности: 0 -> 1 -> 3 -> 7 -> 15 -> 7 -> 16 -> 7 -> 3 -> 8 ...\par
-Итого сообщений передачи маркера с запросом – 21, маркера без запроса – 24, всего передач маркера – 45.\par
+\subsubsection{Запуск}
+\begin{verbatim}
+mpicc raymond.c -o raymond
+mpiexec -np 25 --oversubscribe ./raymond
+\end{verbatim}
+или (безопаснее)
+\begin{verbatim}
+mpicc raymond.c -o raymond
+mpiexec -np 25 --host=hostname:25 ./raymond
+\end{verbatim}
+\subsubsection{Результаты}
+\begin{verbatim}
+eugene@eugene:~/Skipod/Skipod2$ ./raymond.sh
+0 acquared the marker from 0, entering critical section.
+0 exiting critical section
+2 acquared the marker from 0, entering critical section.
+2 exiting critical section
+6 acquared the marker from 2, entering critical section.
+6 exiting critical section
+14 acquared the marker from 6, entering critical section.
+14 exiting critical section
+14 finished
+13 acquared the marker from 6, entering critical section.
+13 exiting critical section
+13 finished
+6 finished
+5 acquared the marker from 2, entering critical section.
+5 exiting critical section
+11 acquared the marker from 5, entering critical section.
+11 exiting critical section
+24 acquared the marker from 11, entering critical section.
+24 exiting critical section
+24 finished
+23 acquared the marker from 11, entering critical section.
+23 exiting critical section
+23 finished
+11 finished
+12 acquared the marker from 5, entering critical section.
+12 exiting critical section
+12 finished
+5 finished
+2 finished
+0 finished
+1 acquared the marker from 0, entering critical section.
+1 exiting critical section
+4 acquared the marker from 1, entering critical section.
+4 exiting critical section
+9 acquared the marker from 4, entering critical section.
+9 exiting critical section
+20 acquared the marker from 9, entering critical section.
+20 exiting critical section
+20 finished
+19 acquared the marker from 9, entering critical section.
+19 exiting critical section
+19 finished
+9 finished
+10 acquared the marker from 4, entering critical section.
+10 exiting critical section
+21 acquared the marker from 10, entering critical section.
+21 exiting critical section
+21 finished
+22 acquared the marker from 10, entering critical section.
+22 exiting critical section
+22 finished
+10 finished
+4 finished
+1 finished
+3 acquared the marker from 1, entering critical section.
+3 exiting critical section
+8 acquared the marker from 3, entering critical section.
+8 exiting critical section
+17 acquared the marker from 8, entering critical section.
+17 exiting critical section
+17 finished
+18 acquared the marker from 8, entering critical section.
+18 exiting critical section
+18 finished
+8 finished
+3 finished
+7 acquared the marker from 3, entering critical section.
+7 exiting critical section
+15 acquared the marker from 7, entering critical section.
+15 exiting critical section
+15 finished
+7 finished
+16 acquared the marker from 7, entering critical section.
+16 exiting critical section
+16 finished
+\end{verbatim}
+\subsection{Временная оценка}
+Cообщений передачи маркера с запросом – 21, маркера без запроса – 24, всего передач маркера – 45.\par
 (Lz - запрос, Lm - маркер; считаем эти сообщения равными 1 байту)\par
 Таким образом, (Ts+Tb*Lz)*21+(Ts+Tb*Lm)*45 = 6666.
-\subsection{Результаты}
-\begin{verbatim}
-0 aqcuared the marker from 0, entering critical section.
-0 exiting critical section
-2 aqcuared the marker from 0, entering critical section.
-2 exiting critical section
-5 aqcuared the marker from 2, entering critical section.
-5 exiting critical section
-12 aqcuared the marker from 5, entering critical section.
-12 exiting critical section
-11 aqcuared the marker from 5, entering critical section.
-11 exiting critical section
-24 aqcuared the marker from 11, entering critical section.
-24 exiting critical section
-23 aqcuared the marker from 11, entering critical section.
-23 exiting critical section
-6 aqcuared the marker from 2, entering critical section.
-6 exiting critical section
-14 aqcuared the marker from 6, entering critical section.
-14 exiting critical section
-13 aqcuared the marker from 6, entering critical section.
-13 exiting critical section
-1 aqcuared the marker from 0, entering critical section.
-1 exiting critical section
-3 aqcuared the marker from 1, entering critical section.
-3 exiting critical section
-7 aqcuared the marker from 3, entering critical section.
-7 exiting critical section
-15 aqcuared the marker from 7, entering critical section.
-15 exiting critical section
-16 aqcuared the marker from 7, entering critical section.
-16 exiting critical section
-8 aqcuared the marker from 3, entering critical section.
-8 exiting critical section
-17 aqcuared the marker from 8, entering critical section.
-17 exiting critical section
-18 aqcuared the marker from 8, entering critical section.
-18 exiting critical section
-4 aqcuared the marker from 1, entering critical section.
-4 exiting critical section
-10 aqcuared the marker from 4, entering critical section.
-10 exiting critical section
-21 aqcuared the marker from 10, entering critical section.
-21 exiting critical section
-22 aqcuared the marker from 10, entering critical section.
-22 exiting critical section
-9 aqcuared the marker from 4, entering critical section.
-9 exiting critical section
-19 aqcuared the marker from 9, entering critical section.
-19 exiting critical section
-20 aqcuared the marker from 9, entering critical section.
-20 exiting critical section
-\end{verbatim}
 \newpage
 \section{Задача 2}
 \subsection{Описание}
