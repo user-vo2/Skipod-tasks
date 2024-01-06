@@ -20,11 +20,10 @@ jmp_buf jbuf;
 char file_path[] = "checkpoints";
 double maxeps = 0.1e-7;
 int itmax = 101;
-int i, j, k;
 double w = 0.5;
 double eps;
 double b, s = 0.;
-double ***A;
+double (*A)[N][N];
 MPI_Comm global_comm = MPI_COMM_WORLD;
 int rank_to_kill = -50;
 
@@ -62,19 +61,15 @@ static void error_handler(MPI_Comm *comm, int *err, ...) {
     printf("Rank %d / %d: Notified of error %s\n", rank, size, errstr);
     
     MPI_Barrier(global_comm);
-
+    eps = 0;
     //adaptive choice of rows(depends on process count)
-    fst_r = (N - 2) / size * rank + 1;
-    lst_r = (N - 2) / size * (rank + 1) + 1;
+    fst_r = ((rank * (N-2)) / size) + 1;
+    lst_r = ((rank + 1) * (N-2)) / size + 1;
     cnt_r = lst_r - fst_r;
+    printf("%d %d %d %d\n", rank, fst_r, lst_r, cnt_r);
 
-    A = malloc((cnt_r + 2) * sizeof(*A));
-
-    for (i = 0; i < cnt_r + 2; i++) {
-        A[i] = malloc(N * sizeof(*A[i]));
-        for (j = 0; j < N; j++)
-            A[i][j] = malloc(N * sizeof(*A[i][j]));
-    }
+    free(A);
+    A = calloc((cnt_r + 2) * N2, sizeof(*A));
 
     longjmp(jbuf, 0);
 }
@@ -131,26 +126,19 @@ int main(int argc, char **argv) {
 }
 
 void init() {
-    //adaptive choice of rows(depends on process count)
-    fst_r = (N - 2) / size * rank + 1;
-    lst_r = (N - 2) / size * (rank + 1) + 1;
+    // adaptive choice of rows (depends on process count)
+    fst_r = ((rank * (N-2)) / size) + 1;
+    lst_r = ((rank + 1) * (N-2)) / size + 1;
     cnt_r = lst_r - fst_r;
 
-    A = malloc((cnt_r + 2) * sizeof(*A));
+    printf("%d %d %d %d\n", rank, fst_r, lst_r, cnt_r);
+    A = calloc((cnt_r + 2) * N2, sizeof(*A));
 
-    for (i = 0; i < cnt_r + 2; i++) {
-        A[i] = malloc(N * sizeof(*A[i]));
-        for (j = 0; j < N; j++) {
-            A[i][j] = malloc(N * sizeof(*A[i][j]));
-            if (j <= N - 1) {
-                    for (k = 0; k < N ; k++) {
-                    //row check is unnecessary now
-                    if (j == 0 || j == N - 1 || k == 0 || k == N - 1)
-                        A[i][j][k] = 0.;
-                    else
-                        A[i][j][k] = (4. + i + j + k);
-                }
-            }    
+    for (int i = 1; i <= cnt_r; i++) {
+        for (int j = 1; j <= N - 2; j++) {
+            for (int k = 1; k <= N - 2; k++) {
+                A[i][j][k] = (4. + i + j + k);
+            }
         }
     }
 }
@@ -161,49 +149,48 @@ void relax() {
     pass_last_row();
     pass_first_row();
     wait_all();
-    for (i = 1; i < cnt_r + 1; i++)
-        for (j = 1; j <= N - 2; j++)
-            for (k = 1 + (i + j) % 2; k <= N - 2; k += 2) {
+    for (int i = 1; i <= cnt_r; i++)
+        for (int j = 1; j <= N - 2; j++)
+            for (int k = 1 + (i + j) % 2; k <= N - 2; k += 2) {
                 b = w * ((A[i - 1][j][k] + A[i + 1][j][k] + A[i][j - 1][k] +
                           A[i][j + 1][k] + A[i][j][k - 1] + A[i][j][k + 1]) /
                           6. - A[i][j][k]);
                 eps_local = Max(fabs(b), eps_local);
                 A[i][j][k] = A[i][j][k] + b;
             }
+
     if (rank == rank_to_kill) {
         printf("Process %d. I guess I'll die...\n", rank);
         fflush(stdout);
         raise(SIGKILL);
     }
     rank_to_kill++;
-    
+
     pass_last_row();
     pass_first_row();
     wait_all();
-    for (i = 1; i < cnt_r + 1; i++)
-        for (j = 1; j <= N - 2; j++)
-            for (k = 1 + (i + j + 1) % 2; k <= N - 2; k += 2) {
+    for (int i = 1; i <= cnt_r; i++)
+        for (int j = 1; j <= N - 2; j++)
+            for (int k = 1 + (i + j + 1) % 2; k <= N - 2; k += 2) {
                 b = w * ((A[i - 1][j][k] + A[i + 1][j][k] + A[i][j - 1][k] +
                           A[i][j + 1][k] + A[i][j][k - 1] + A[i][j][k + 1]) /
                           6. - A[i][j][k]);
                 A[i][j][k] = A[i][j][k] + b;
             }
+
     save_checkpoint();
     MPI_Allreduce(&eps_local, &eps, 1 , MPI_DOUBLE, MPI_MAX, global_comm);
 }
 
 void verify() {
-    if (rank >= size)
-        return;
     load_checkpoint();
     double s_local = 0.;
 
-    for (i = 1; i < cnt_r + 1; i++)
-        for (j = 0; j <= N - 1; j++)
-            for (k = 0; k <= N - 1; k++) {
+    for (int i = 1; i <= cnt_r; i++)
+        for (int j = 1; j <= N - 2; j++)
+            for (int k = 1; k <= N - 2; k++) {
                 s_local = s_local + A[i][j][k] * (i + 1) * (j + 1) * (k + 1) / (N3);
             }
-
     MPI_Reduce(&s_local, &s, 1 , MPI_DOUBLE, MPI_SUM, 0, global_comm);
 
     if (!rank) {
@@ -241,18 +228,20 @@ void wait_all() {
 void save_checkpoint() {
     MPI_File file;
     MPI_File_open(global_comm, file_path, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
-    for (i = 1; i < cnt_r + 1; i++) {
-        MPI_File_write_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r - 1), A[i][0], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
+    for (int i = 1; i <= cnt_r; i++) {
+        MPI_File_write_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r + i), &A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
     }
     MPI_Barrier(global_comm);
     MPI_File_close(&file);
 }
 
 void load_checkpoint() {
+    free(A);
+    A = calloc((cnt_r + 2) * N2, sizeof(*A));
     MPI_File file;
     MPI_File_open(global_comm, file_path, MPI_MODE_RDONLY, MPI_INFO_NULL, &file);
-    for (i = 1; i < cnt_r + 1; i++) {
-        MPI_File_read_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r - 1), A[i][0], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
+    for (int i = 1; i <= cnt_r; i++) {
+        MPI_File_read_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r + i), &A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
     }
     MPI_Barrier(global_comm);
     MPI_File_close(&file);

@@ -67,6 +67,31 @@ sleep (<случайное время>);
 Для передачи маркера использовать средства MPI.
 Получить временную оценку работы алгоритма. Оценить сколько времени потребуется, если маркером владеет нулевой процесс. Время старта (время «разгона» после получения доступа к шине для передачи сообщения) равно 100, время передачи байта равно 1 (Ts=100,Tb=1). Процессорные операции, включая чтение из памяти и запись в память, считаются бесконечно быстрыми.
 \subsection{Реализация}
+Все процессы представлены в виде сбалансированного двоичного дерева. Каждый процесс имеет очередь запросов от себя и соседних процессов (1-го, 2-х или 3-х) и указатель в направлении владельца маркера.
+Вход в критическую секцию
+\begin{itemize}
+    \item Если есть маркер, то процесс выполняет КС.
+    \item Если нет маркера, то процесс:
+    \begin{enumerate}
+        \item помещает свой запрос в очередь запросов;
+        \item посылает сообщение «ЗАПРОС» в направлении владельца маркера и ждет сообщений.
+    \end{enumerate}
+\end{itemize}
+Процесс, не находящийся внутри КС должен реагировать на сообщения двух видов -«МАРКЕР» и «ЗАПРОС».
+\begin{enumerate}
+    \item Пришло сообщение «МАРКЕР»:
+    \begin{itemize}
+        \item М1. Взять 1-ый запрос из очереди и послать маркер его автору (концептуально, возможно себе).
+        \item М2. Поменять значение указателя в сторону маркера.
+        \item М3. Исключить запрос из очереди.
+        \item М4. Если в очереди остались запросы, то послать сообщение «ЗАПРОС» в сторону маркера.
+    \end{itemize}
+    \item Пришло сообщение «ЗАПРОС»:
+    \begin{itemize}
+        \item Поместить запрос в очередь.
+        \item Если нет маркера, то послать сообщение «ЗАПРОС» в сторону маркера, иначе (если есть маркер) - перейти на пункт М1.
+    \end{itemize}
+\end{enumerate}
 \begin{figure}[h!]
   \includegraphics[width=1\linewidth]{marker.png}
   \caption{Схема системы передачи маркера}
@@ -82,85 +107,6 @@ mpiexec -np 25 --oversubscribe ./raymond
 mpicc raymond.c -o raymond
 mpiexec -np 25 --host=hostname:25 ./raymond
 \end{verbatim}
-\subsubsection{Результаты}
-\begin{verbatim}
-eugene@eugene:~/Skipod/Skipod2$ ./raymond.sh
-0 acquared the marker from 0, entering critical section.
-0 exiting critical section
-2 acquared the marker from 0, entering critical section.
-2 exiting critical section
-6 acquared the marker from 2, entering critical section.
-6 exiting critical section
-14 acquared the marker from 6, entering critical section.
-14 exiting critical section
-14 finished
-13 acquared the marker from 6, entering critical section.
-13 exiting critical section
-13 finished
-6 finished
-5 acquared the marker from 2, entering critical section.
-5 exiting critical section
-11 acquared the marker from 5, entering critical section.
-11 exiting critical section
-24 acquared the marker from 11, entering critical section.
-24 exiting critical section
-24 finished
-23 acquared the marker from 11, entering critical section.
-23 exiting critical section
-23 finished
-11 finished
-12 acquared the marker from 5, entering critical section.
-12 exiting critical section
-12 finished
-5 finished
-2 finished
-0 finished
-1 acquared the marker from 0, entering critical section.
-1 exiting critical section
-4 acquared the marker from 1, entering critical section.
-4 exiting critical section
-9 acquared the marker from 4, entering critical section.
-9 exiting critical section
-20 acquared the marker from 9, entering critical section.
-20 exiting critical section
-20 finished
-19 acquared the marker from 9, entering critical section.
-19 exiting critical section
-19 finished
-9 finished
-10 acquared the marker from 4, entering critical section.
-10 exiting critical section
-21 acquared the marker from 10, entering critical section.
-21 exiting critical section
-21 finished
-22 acquared the marker from 10, entering critical section.
-22 exiting critical section
-22 finished
-10 finished
-4 finished
-1 finished
-3 acquared the marker from 1, entering critical section.
-3 exiting critical section
-8 acquared the marker from 3, entering critical section.
-8 exiting critical section
-17 acquared the marker from 8, entering critical section.
-17 exiting critical section
-17 finished
-18 acquared the marker from 8, entering critical section.
-18 exiting critical section
-18 finished
-8 finished
-3 finished
-7 acquared the marker from 3, entering critical section.
-7 exiting critical section
-15 acquared the marker from 7, entering critical section.
-15 exiting critical section
-15 finished
-7 finished
-16 acquared the marker from 7, entering critical section.
-16 exiting critical section
-16 finished
-\end{verbatim}
 \subsection{Временная оценка}
 Cообщений передачи маркера с запросом – 21, маркера без запроса – 24, всего передач маркера – 45.\par
 (Lz - запрос, Lm - маркер; считаем эти сообщения равными 1 байту)\par
@@ -169,7 +115,6 @@ Cообщений передачи маркера с запросом – 21, м
 \section{Задача 2}
 \subsection{Описание}
 Доработать MPI-программу, реализованную в рамках курса “Суперкомпьютеры и параллельная обработка данных”. Добавить контрольные точки для продолжения работы программы в случае сбоя. Реализовать один из 3-х сценариев работы после сбоя: a) продолжить работу программы только на “исправных” процессах; б) вместо процессов, вышедших из строя, создать новые MPI-процессы, которые необходимо использовать для продолжения расчетов; в) при запуске программы на счет сразу запустить некоторое дополнительное количество MPI-процессов, которые использовать в случае сбоя.
-Подготовить отчет о выполнении задания, включающий описание алгоритма, детали реализации, а также временные оценки работы алгоритма.
 \subsection{Реализация}
 Была выбран стратегия продолжения работы на исправных процессах, которые бы продолжили работу.\par
 Был добавлен \textit{error\_handler}, перераспределяющий процессы и переводящий их в точку начала прерванной итерации.
@@ -189,11 +134,15 @@ static void error_handler(MPI_Comm *comm, int *err, ...) {
     printf("Rank %d / %d: Notified of error %s\n", rank, size, errstr);
     
     MPI_Barrier(global_comm);
-    
+    eps = 0;
     //adaptive choice of rows(depends on process count)
-    fst_r = (N - 2) / size * rank + 1;
-    lst_r = (N - 2) / size * (rank + 1) + 1;
+    fst_r = ((rank * (N-2)) / size) + 1;
+    lst_r = ((rank + 1) * (N-2)) / size + 1;
     cnt_r = lst_r - fst_r;
+    printf("%d %d %d %d\n", rank, fst_r, lst_r, cnt_r);
+
+    free(A);
+    A = calloc((cnt_r + 2) * N2, sizeof(*A));
 
     longjmp(jbuf, 0);
 }
@@ -203,135 +152,29 @@ static void error_handler(MPI_Comm *comm, int *err, ...) {
 void save_checkpoint() {
     MPI_File file;
     MPI_File_open(global_comm, file_path, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
-    for (i = fst_r; i < lst_r; i++) {
-        MPI_File_write_at(file, sizeof(MPI_DOUBLE) * N2 * i, A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
+    for (int i = 1; i <= cnt_r; i++) {
+        MPI_File_write_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r + i), &A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
     }
     MPI_Barrier(global_comm);
     MPI_File_close(&file);
 }
 
 void load_checkpoint() {
+    free(A);
+    A = calloc((cnt_r + 2) * N2, sizeof(*A));
     MPI_File file;
     MPI_File_open(global_comm, file_path, MPI_MODE_RDONLY, MPI_INFO_NULL, &file);
-    for (i = fst_r; i < lst_r; i++) {
-        MPI_File_read_at(file, sizeof(MPI_DOUBLE) * N2 * i, A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
+    for (int i = 1; i <= cnt_r; i++) {
+        MPI_File_read_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r + i), &A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
     }
     MPI_Barrier(global_comm);
     MPI_File_close(&file);
 }
 \end{verbatim}
-\subsection{Результаты}
+\subsubsection{Запуск}
 \begin{verbatim}
-it=   1   eps=33.333333
-it=   2   eps=28.567130
-it=   3   eps=22.992429
-it=   4   eps=18.080551
-it=   5   eps=14.197599
-it=   6   eps=11.245853
-it=   7   eps=10.642238
-it=   8   eps=9.880777
-it=   9   eps=9.064916
-it=  10   eps=8.255864
-it=  11   eps=7.487494
-it=  12   eps=6.776523
-it=  13   eps=6.129263
-it=  14   eps=5.545983
-it=  15   eps=5.232677
-it=  16   eps=4.937618
-it=  17   eps=4.652311
-it=  18   eps=4.379394
-it=  19   eps=4.120379
-it=  20   eps=3.882259
-it=  21   eps=3.757147
-it=  22   eps=3.629457
-it=  23   eps=3.501026
-it=  24   eps=3.373277
-it=  25   eps=3.247300
-it=  26   eps=3.123911
-it=  27   eps=3.003710
-it=  28   eps=2.887120
-it=  29   eps=2.774428
-it=  30   eps=2.669691
-it=  31   eps=2.610302
-it=  32   eps=2.549794
-it=  33   eps=2.488657
-it=  34   eps=2.427305
-it=  35   eps=2.366081
-it=  36   eps=2.305269
-it=  37   eps=2.245105
-it=  38   eps=2.185777
-it=  39   eps=2.127438
-it=  40   eps=2.070211
-it=  41   eps=2.014188
-it=  42   eps=1.959440
-it=  43   eps=1.906020
-it=  44   eps=1.853963
-it=  45   eps=1.803290
-it=  46   eps=1.756696
-it=  47   eps=1.722789
-it=  48   eps=1.689139
-it=  49   eps=1.655812
-it=  50   eps=1.622860
-Process 0. I guess I'll die...
-NBC_Progress: an error 75 was found during schedule 0x5570e9e61c80 at row-offset 106 - aborting the schedule
-
-NBC_Progress: an error 75 was found during schedule 0x556650dacd00 at row-offset 0 - aborting the schedule
-
-Rank 0 / 3: Notified of error MPI_ERR_PROC_FAILED: Process Failure
-Rank 1 / 3: Notified of error MPI_ERR_PROC_FAILED: Process Failure
-Rank 2 / 3: Notified of error MPI_ERR_PROC_FAILED: Process Failure
-it=  51   eps=1.590328
-it=  52   eps=1.558605
-it=  53   eps=1.527076
-it=  54   eps=1.495652
-it=  55   eps=1.465031
-it=  56   eps=1.434796
-it=  57   eps=1.407045
-it=  58   eps=1.386674
-it=  59   eps=1.366264
-it=  60   eps=1.345835
-it=  61   eps=1.325407
-it=  62   eps=1.305002
-it=  63   eps=1.284640
-it=  64   eps=1.264344
-it=  65   eps=1.244135
-it=  66   eps=1.224035
-it=  67   eps=1.204064
-it=  68   eps=1.184243
-it=  69   eps=1.164591
-it=  70   eps=1.145124
-it=  71   eps=1.125860
-it=  72   eps=1.106812
-it=  73   eps=1.092684
-it=  74   eps=1.078840
-it=  75   eps=1.064984
-it=  76   eps=1.051138
-it=  77   eps=1.037319
-it=  78   eps=1.023546
-it=  79   eps=1.009835
-it=  80   eps=0.996198
-it=  81   eps=0.982650
-it=  82   eps=0.969201
-it=  83   eps=0.955862
-it=  84   eps=0.942642
-it=  85   eps=0.929549
-it=  86   eps=0.916589
-it=  87   eps=0.903770
-it=  88   eps=0.891095
-it=  89   eps=0.878571
-it=  90   eps=0.866314
-it=  91   eps=0.857234
-it=  92   eps=0.848174
-it=  93   eps=0.839140
-it=  94   eps=0.830140
-it=  95   eps=0.821179
-it=  96   eps=0.812262
-it=  97   eps=0.803394
-it=  98   eps=0.794579
-it=  99   eps=0.785823
-it= 100   eps=0.777127
-  S = 3113137.931210
-Elapsed time: 0.187417.
+mpicc redb_3d_mpi_flthandle.c -o redb_3d_mpi_flthandle
+mpiexec -np 4 --with-ft ulfm ./redb_3d_mpi_flthandle
 \end{verbatim}
 \section{Ссылки}
 \begin{raggedright}

@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     } else {
         srand(time(NULL));
         unsigned int sleeptime = 1 + rand() % 10;
-        sleep(1);
+        sleep(sleeptime);
         printf("%d exiting critical section\n", rank);
         fflush(stdout);
         remove(file_path);
