@@ -62,7 +62,8 @@ static void error_handler(MPI_Comm *comm, int *err, ...) {
     
     MPI_Barrier(global_comm);
     eps = 0;
-    //adaptive choice of rows(depends on process count)
+
+    // adaptive choice of rows (depends on process count)
     fst_r = ((rank * (N-2)) / size) + 1;
     lst_r = ((rank + 1) * (N-2)) / size + 1;
     cnt_r = lst_r - fst_r;
@@ -70,6 +71,9 @@ static void error_handler(MPI_Comm *comm, int *err, ...) {
 
     free(A);
     A = calloc((cnt_r + 2) * N2, sizeof(*A));
+
+    // restore program state
+    load_checkpoint();
 
     longjmp(jbuf, 0);
 }
@@ -127,8 +131,8 @@ int main(int argc, char **argv) {
 
 void init() {
     // adaptive choice of rows (depends on process count)
-    fst_r = ((rank * (N-2)) / size) + 1;
-    lst_r = ((rank + 1) * (N-2)) / size + 1;
+    fst_r = ((rank * (N - 2)) / size) + 1;
+    lst_r = ((rank + 1) * (N - 2)) / size + 1;
     cnt_r = lst_r - fst_r;
 
     printf("%d %d %d %d\n", rank, fst_r, lst_r, cnt_r);
@@ -137,14 +141,15 @@ void init() {
     for (int i = 1; i <= cnt_r; i++) {
         for (int j = 1; j <= N - 2; j++) {
             for (int k = 1; k <= N - 2; k++) {
-                A[i][j][k] = (4. + i + j + k);
+                if (i + fst_r <= N - 2) {
+                    A[i][j][k] = (4. + fst_r + i - 1 + j + k);
+                }
             }
         }
     }
 }
 
 void relax() {    
-    load_checkpoint();
     double eps_local = 0.;
     pass_last_row();
     pass_first_row();
@@ -183,13 +188,12 @@ void relax() {
 }
 
 void verify() {
-    load_checkpoint();
     double s_local = 0.;
 
     for (int i = 1; i <= cnt_r; i++)
         for (int j = 1; j <= N - 2; j++)
             for (int k = 1; k <= N - 2; k++) {
-                s_local = s_local + A[i][j][k] * (i + 1) * (j + 1) * (k + 1) / (N3);
+                s_local = s_local + A[i][j][k] * (i + fst_r) * (j + 1) * (k + 1) / (N3);
             }
     MPI_Reduce(&s_local, &s, 1 , MPI_DOUBLE, MPI_SUM, 0, global_comm);
 
@@ -229,7 +233,7 @@ void save_checkpoint() {
     MPI_File file;
     MPI_File_open(global_comm, file_path, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
     for (int i = 1; i <= cnt_r; i++) {
-        MPI_File_write_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r + i), &A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
+        MPI_File_write_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r + i - 1), &A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
     }
     MPI_Barrier(global_comm);
     MPI_File_close(&file);
@@ -241,7 +245,7 @@ void load_checkpoint() {
     MPI_File file;
     MPI_File_open(global_comm, file_path, MPI_MODE_RDONLY, MPI_INFO_NULL, &file);
     for (int i = 1; i <= cnt_r; i++) {
-        MPI_File_read_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r + i), &A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
+        MPI_File_read_at(file, sizeof(MPI_DOUBLE) * N2 * (fst_r + i - 1), &A[i], N2, MPI_DOUBLE, MPI_STATUS_IGNORE);
     }
     MPI_Barrier(global_comm);
     MPI_File_close(&file);
